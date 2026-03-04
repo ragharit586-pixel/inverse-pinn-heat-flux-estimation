@@ -209,7 +209,7 @@ M.Tech Aerospace Engineering (Thermal & Propulsion)
 Indian Institute of Space Science and Technology (IIST)  
 Thiruvananthapuram, Kerala, India  
 
-[![LinkedIn](https://www.linkedin.com/in/raghavendra-mylar-b00b95240/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/raghavendra-mylar-b00b95240/)  
 [![GitHub](https://img.shields.io/badge/GitHub-ragharit586--pixel-black?style=flat&logo=github)](https://github.com/ragharit586-pixel)
 
 ---
