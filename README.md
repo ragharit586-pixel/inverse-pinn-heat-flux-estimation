@@ -21,7 +21,7 @@ Manuscript under preparation for submission to:
 > 🔬 **Research Disclosure Notice**  
 > Full training implementation is withheld pending journal submission.  
 > A complete reproducible codebase will be released upon acceptance.  
-> Architecture and parameterization files are provided for reference.  
+> Architecture and parameterization files are provided for reference only.  
 > For academic inquiries: **ragharit586@gmail.com**
 
 Full code release planned post-acceptance.  
@@ -39,9 +39,9 @@ This work uses a **Physics-Informed Neural Network in inverse mode** to recover 
  Hot Gas Side  →  q(x,t) = ?  [UNKNOWN - what we recover]
  ┌─────────────────────────────────────────────┐
  │        Copper Wall (2D Transient)           │
- │     ●        ●        ●        ●       ●    │← Sensor Row 1 (y=1.25mm)
- │     ●        ●        ●        ●       ●    │← Sensor Row 2 (y=2.50mm)
- │     ●        ●        ●        ●       ●    │← Sensor Row 3 (y=3.75mm)
+ │   ● ● ● ● ●   ← Sensor Row 1 (y=1.25mm)   │
+ │   ● ● ● ● ●   ← Sensor Row 2 (y=2.50mm)   │
+ │   ● ● ● ● ●   ← Sensor Row 3 (y=3.75mm)   │
  └─────────────────────────────────────────────┘
  Coolant Side  →  Robin BC: ∂T/∂y + Bi(x)·T = 0
 ```
@@ -97,16 +97,12 @@ The model was initialized **deliberately far from truth** to test genuine robust
 
 ### 3. Learnable Heat Flux Parameterization
 
-The unknown flux is parameterized as a **Gaussian with temporal ramp**:
+The unknown flux is parameterized as a **Gaussian profile with a temporal activation function**, jointly optimized with the PINN temperature field.
 
-```python
-q(x, t) = [q_base + q_amp · exp(-(x - x₀)² / σ²)] · ramp(t)
+Four learnable parameters are recovered through inverse optimization.  
+Log-space parameterization is used to enforce strict physical positivity constraints.
 
-ramp(t) = clamp(t / 0.2s, max=1.0)   # linear ramp over 0.2s, then steady
-```
-
-Four learnable parameters: `{log_q_base, log_q_amp, x₀, log_σ}`  
-Log-parameterization ensures strict positivity.
+> 🔒 Exact parameterization formula and constraints disclosed in the paper.
 
 ---
 
@@ -129,28 +125,23 @@ See [`src/model.py`](src/model.py) for the full architecture implementation.
 
 ### Training Strategy
 
-```
-Stage 1 (ep 1–8000)   : Data + IC only → T-field settles, q frozen
-Stage 2 (ep 8001–13000): Ramp physics + hot BC → q starts moving
-Stage 3 (ep 13001–25000): Full physics, w_hot=50 → q converges
-         ↓
-L-BFGS fine-tuning (500 outer iters) → final polish
-```
+A **multi-stage curriculum training strategy** with progressive physics activation is employed to ensure stable convergence of both the temperature field and the unknown heat flux parameters.
+
+A two-phase optimizer (first-order + quasi-Newton) is used for final convergence.
+
+> 🔒 Specific stage schedule, loss weights, and curriculum design are the core contribution of this work — disclosed in the paper.
 
 ### Loss Function
 
+The total loss combines data fidelity, PDE residual, and all boundary conditions:
+
 ```
-L_total = w_data·L_data + w_pde·L_pde + w_hot·L_hot
-        + w_bot·L_bot + w_ad·L_ad + w_ic·L_ic + w_x0·L_x0_pen
+L_total = L_data + L_pde + L_hot_wall + L_coolant + L_adiabatic + L_ic + L_regularization
 ```
 
-- `L_data` : Weighted MSE on sensors (Row-1 sensors get 3× weight — closest to hot wall)
-- `L_pde`  : 2D transient heat equation residual
-- `L_hot`  : Neumann BC at hot gas wall → drives q recovery
-- `L_bot`  : Robin BC at coolant side
-- `L_ad`   : Adiabatic BCs at x=0, L
-- `L_ic`   : Uniform initial temperature
-- `L_x0_pen`: Soft quadratic penalty to keep x₀ in domain
+A **proximity-weighted sensor strategy** is applied to prioritize near-wall thermal measurements for more accurate flux recovery.
+
+> 🔒 Exact weighting scheme and regularization design disclosed in the paper.
 
 ---
 
@@ -186,7 +177,7 @@ inverse-pinn-heat-flux-estimation/
 │
 ├── src/
 │   ├── model.py          # PINN architecture — fully disclosed
-│   ├── heat_flux.py      # Gaussian q(x,t) parameterization
+│   ├── heat_flux.py      # Gaussian q(x,t) parameterization (reference)
 │   └── boundary.py       # Biot number function and BC helpers
 │
 ├── results/
